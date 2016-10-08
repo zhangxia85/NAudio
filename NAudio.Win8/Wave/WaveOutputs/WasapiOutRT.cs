@@ -10,6 +10,7 @@ using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Dsp;
 using NAudio.Wave;
 using Windows.Media.Devices;
+using NAudio.Utils;
 using NAudio.Wave.SampleProviders;
 
 namespace NAudio.Win8.Wave.WaveOutputs
@@ -95,7 +96,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
         {
             audioClientProperties = new AudioClientProperties()
             {
-                cbSize = (uint) Marshal.SizeOf(typeof (AudioClientProperties)),
+                cbSize = (uint) MarshalHelpers.SizeOf<AudioClientProperties>(),
                 bIsOffload = Convert.ToInt32(useHardwareOffload),
                 eCategory = category,
                 Options = options
@@ -107,11 +108,13 @@ namespace NAudio.Win8.Wave.WaveOutputs
             var icbh = new ActivateAudioInterfaceCompletionHandler(
                 ac2 =>
                 {
+                    
                     if (this.audioClientProperties != null)
                     {
                         IntPtr p = Marshal.AllocHGlobal(Marshal.SizeOf(this.audioClientProperties.Value));
                         Marshal.StructureToPtr(this.audioClientProperties.Value, p, false);
                         ac2.SetClientProperties(p);
+                        Marshal.FreeHGlobal(p);
                         // TODO: consider whether we can marshal this without the need for AllocHGlobal
                     }
 
@@ -318,7 +321,10 @@ namespace NAudio.Win8.Wave.WaveOutputs
             if (isInitialized) throw new InvalidOperationException("Already Initialized");
             isInitialized = true;
             this.waveProviderFunc = waveProviderFunc;
-            ThreadPool.RunAsync(s => PlayThread());
+            Task.Factory.StartNew(() =>
+            {
+                PlayThread();
+            });
         }
 
         /// <summary>
@@ -407,8 +413,9 @@ namespace NAudio.Win8.Wave.WaveOutputs
                 audioClient.Initialize(shareMode, AudioClientStreamFlags.EventCallback, latencyRefTimes, 0,
                                        outputFormat, Guid.Empty);
 
-                // Get back the effective latency from AudioClient
-                latencyMilliseconds = (int) (audioClient.StreamLatency/10000);
+                // Get back the effective latency from AudioClient. On Windows 10 it can be 0
+                if (audioClient.StreamLatency > 0)
+                    latencyMilliseconds = (int) (audioClient.StreamLatency/10000);
             }
             else
             {
@@ -418,7 +425,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
             }
 
             // Create the Wait Event Handle
-            frameEventWaitHandle = NativeMethods.CreateEventEx(IntPtr.Zero, IntPtr.Zero, 0, EventAccess.EVENT_ALL_ACCESS);
+            frameEventWaitHandle = NativeMethods.CreateEventExW(IntPtr.Zero, IntPtr.Zero, 0, EventAccess.EVENT_ALL_ACCESS);
             audioClient.SetEventHandle(frameEventWaitHandle);
 
             // Get the RenderClient
@@ -461,20 +468,20 @@ namespace NAudio.Win8.Wave.WaveOutputs
     }
 
     /// <summary>
-    /// Come useful native methods for Windows 8 support
+    /// Some useful native methods for Windows 8/10 support ( https://msdn.microsoft.com/en-us/library/windows/desktop/hh802935(v=vs.85).aspx )
     /// </summary>
     class NativeMethods
     {
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = false, PreserveSig = true,
-    SetLastError = true)]
-        internal static extern IntPtr CreateEventEx(IntPtr lpEventAttributes, IntPtr lpName, int dwFlags,
+        [DllImport("api-ms-win-core-synch-l1-2-0.dll", CharSet = CharSet.Unicode, ExactSpelling = false,
+            PreserveSig = true, SetLastError = true)]
+        internal static extern IntPtr CreateEventExW(IntPtr lpEventAttributes, IntPtr lpName, int dwFlags,
                                                     EventAccess dwDesiredAccess);
 
 
-        [DllImport("kernel32.dll", ExactSpelling = true, PreserveSig = true, SetLastError = true)]
+        [DllImport("api-ms-win-core-handle-l1-1-0.dll", ExactSpelling = true, PreserveSig = true, SetLastError = true)]
         public static extern bool CloseHandle(IntPtr hObject);
 
-        [DllImport("kernel32", ExactSpelling = true, PreserveSig = true, SetLastError = true)]
+        [DllImport("api-ms-win-core-synch-l1-2-0.dll", ExactSpelling = true, PreserveSig = true, SetLastError = true)]
         public static extern int WaitForSingleObjectEx(IntPtr hEvent, int milliseconds, bool bAlertable);
 
         /// <summary>
@@ -598,7 +605,7 @@ namespace NAudio.Win8.Wave.WaveOutputs
         int IsFormatSupported(
             AudioClientShareMode shareMode,
             [In] WaveFormat pFormat,
-            [Out, MarshalAs(UnmanagedType.LPStruct)] out WaveFormatExtensible closestMatchFormat);
+            out IntPtr closestMatchFormat);
 
         int GetMixFormat(out IntPtr deviceFormatPointer);
 

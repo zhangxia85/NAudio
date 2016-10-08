@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi.Interfaces;
 using NAudio.MediaFoundation;
+using NAudio.Utils;
 
 namespace NAudio.Wave
 {
@@ -15,8 +17,8 @@ namespace NAudio.Wave
     public class MediaFoundationReader : WaveStream
     {
         private WaveFormat waveFormat;
-        private readonly long length;
-        private readonly MediaFoundationReaderSettings settings;
+        private long length;
+        private MediaFoundationReaderSettings settings;
         private readonly string file;
         private IMFSourceReader pReader;
 
@@ -52,13 +54,19 @@ namespace NAudio.Wave
             public bool RepositionInRead { get; set; }
         }
 
-
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        protected MediaFoundationReader()
+        {
+        }
+        
         /// <summary>
         /// Creates a new MediaFoundationReader based on the supplied file
         /// </summary>
         /// <param name="file">Filename (can also be a URL  e.g. http:// mms:// file://)</param>
         public MediaFoundationReader(string file)
-            : this(file, new MediaFoundationReaderSettings())
+            : this(file, null)
         {
         }
 
@@ -70,9 +78,17 @@ namespace NAudio.Wave
         /// <param name="settings">Advanced settings</param>
         public MediaFoundationReader(string file, MediaFoundationReaderSettings settings)
         {
-            MediaFoundationApi.Startup();
-            this.settings = settings;
             this.file = file;
+            Init(settings);
+        }
+
+        /// <summary>
+        /// Initializes 
+        /// </summary>
+        protected void Init(MediaFoundationReaderSettings initialSettings)
+        {
+            MediaFoundationApi.Startup();
+            settings = initialSettings ?? new MediaFoundationReaderSettings();
             var reader = CreateReader(settings);
 
             waveFormat = GetCurrentWaveFormat(reader);
@@ -100,9 +116,19 @@ namespace NAudio.Wave
             int bits = outputMediaType.BitsPerSample;
             int sampleRate = outputMediaType.SampleRate;
 
-            return audioSubType == AudioSubtypes.MFAudioFormat_PCM
-                ? new WaveFormat(sampleRate, bits, channels)
-                : WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channels);
+            if (audioSubType == AudioSubtypes.MFAudioFormat_PCM)
+                return new WaveFormat(sampleRate, bits, channels);
+            if (audioSubType == AudioSubtypes.MFAudioFormat_Float)
+                return WaveFormat.CreateIeeeFloatWaveFormat(sampleRate, channels);
+            var subTypeDescription = FieldDescriptionHelper.Describe(typeof (AudioSubtypes), audioSubType);
+            throw new InvalidDataException(String.Format("Unsupported audio sub Type {0}", subTypeDescription));
+        }
+
+        private static MediaType GetCurrentMediaType(IMFSourceReader reader)
+        {
+            IMFMediaType mediaType;
+            reader.GetCurrentMediaType(MediaFoundationInterop.MF_SOURCE_READER_FIRST_AUDIO_STREAM, out mediaType);
+            return new MediaType(mediaType);
         }
 
         /// <summary>
@@ -121,30 +147,47 @@ namespace NAudio.Wave
             partialMediaType.MajorType = MediaTypes.MFMediaType_Audio;
             partialMediaType.SubType = settings.RequestFloatOutput ? AudioSubtypes.MFAudioFormat_Float : AudioSubtypes.MFAudioFormat_PCM;
 
+            var currentMediaType = GetCurrentMediaType(reader);
+            // mono, low sample rate files can go wrong on Windows 10 unless we specify here
+            partialMediaType.ChannelCount = currentMediaType.ChannelCount;
+            partialMediaType.SampleRate = currentMediaType.SampleRate;
+
             // set the media type
             // can return MF_E_INVALIDMEDIATYPE if not supported
             reader.SetCurrentMediaType(MediaFoundationInterop.MF_SOURCE_READER_FIRST_AUDIO_STREAM, IntPtr.Zero, partialMediaType.MediaFoundationObject);
+
+            Marshal.ReleaseComObject(currentMediaType.MediaFoundationObject);
             return reader;
         }
 
         private long GetLength(IMFSourceReader reader)
         {
-            PropVariant variant;
-            // http://msdn.microsoft.com/en-gb/library/windows/desktop/dd389281%28v=vs.85%29.aspx#getting_file_duration
-            int hResult = reader.GetPresentationAttribute(MediaFoundationInterop.MF_SOURCE_READER_MEDIASOURCE,
-                MediaFoundationAttributes.MF_PD_DURATION, out variant);
-            if (hResult == MediaFoundationErrors.MF_E_ATTRIBUTENOTFOUND)
+            var variantPtr = Marshal.AllocHGlobal(MarshalHelpers.SizeOf<PropVariant>());
+            try
             {
-                // this doesn't support telling us its duration (might be streaming)
-                return 0;
+
+                // http://msdn.microsoft.com/en-gb/library/windows/desktop/dd389281%28v=vs.85%29.aspx#getting_file_duration
+                int hResult = reader.GetPresentationAttribute(MediaFoundationInterop.MF_SOURCE_READER_MEDIASOURCE,
+                    MediaFoundationAttributes.MF_PD_DURATION, variantPtr);
+                if (hResult == MediaFoundationErrors.MF_E_ATTRIBUTENOTFOUND)
+                {
+                    // this doesn't support telling us its duration (might be streaming)
+                    return 0;
+                }
+                if (hResult != 0)
+                {
+                    Marshal.ThrowExceptionForHR(hResult);
+                }
+                var variant = MarshalHelpers.PtrToStructure<PropVariant>(variantPtr);
+
+                var lengthInBytes = (((long)variant.Value) * waveFormat.AverageBytesPerSecond) / 10000000L;
+                return lengthInBytes;
             }
-            if (hResult != 0)
+            finally 
             {
-                Marshal.ThrowExceptionForHR(hResult);
+                PropVariant.Clear(variantPtr);
+                Marshal.FreeHGlobal(variantPtr);
             }
-            var lengthInBytes = (((long)variant.Value) * waveFormat.AverageBytesPerSecond) / 10000000L;
-            variant.Clear();
-            return lengthInBytes;
         }
 
         private byte[] decoderOutputBuffer;
@@ -289,8 +332,12 @@ namespace NAudio.Wave
         {
             long nsPosition = (10000000L * repositionTo) / waveFormat.AverageBytesPerSecond;
             var pv = PropVariant.FromLong(nsPosition);
+            var ptr = Marshal.AllocHGlobal(Marshal.SizeOf(pv));
+            Marshal.StructureToPtr(pv,ptr,false);
+            
             // should pass in a variant of type VT_I8 which is a long containing time in 100nanosecond units
-            pReader.SetCurrentPosition(Guid.Empty, ref pv);
+            pReader.SetCurrentPosition(Guid.Empty, ptr);
+            Marshal.FreeHGlobal(ptr);
             decoderOutputCount = 0;
             decoderOutputOffset = 0;
             position = desiredPosition;

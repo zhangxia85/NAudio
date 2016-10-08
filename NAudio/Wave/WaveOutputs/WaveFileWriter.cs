@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using NAudio.Wave.SampleProviders;
+using NAudio.Utils;
 
+// ReSharper disable once CheckNamespace
 namespace NAudio.Wave
 {
     /// <summary>
@@ -39,7 +41,6 @@ namespace NAudio.Wave
         {
             using (var writer = new WaveFileWriter(filename, sourceProvider.WaveFormat))
             {
-                long outputLength = 0;
                 var buffer = new byte[sourceProvider.WaveFormat.AverageBytesPerSecond * 4];
                 while (true)
                 {
@@ -49,13 +50,39 @@ namespace NAudio.Wave
                         // end of source provider
                         break;
                     }
-                    outputLength += bytesRead;
                     // Write will throw exception if WAV file becomes too large
                     writer.Write(buffer, 0, bytesRead);
                 }
             }
         }
+        
+        /// <summary>
+        /// Writes to a stream by reading all the data from a WaveProvider
+        /// BEWARE: the WaveProvider MUST return 0 from its Read method when it is finished,
+        /// or the Wave File will grow indefinitely.
+        /// </summary>
+        /// <param name="outStream">The stream the method will output to</param>
+        /// <param name="sourceProvider">The source WaveProvider</param>
+        public static void WriteWavFileToStream(Stream outStream, IWaveProvider sourceProvider)
+        {
+            using (var writer = new WaveFileWriter(new IgnoreDisposeStream(outStream), sourceProvider.WaveFormat)) 
+            {
+                var buffer = new byte[sourceProvider.WaveFormat.AverageBytesPerSecond * 4];
+                while(true) 
+                {
+                    var bytesRead = sourceProvider.Read(buffer, 0, buffer.Length);
+                    if (bytesRead == 0) 
+                    {
+                        // end of source provider
+                        outStream.Flush();
+                        break;
+                    }
 
+                    writer.Write(buffer, 0, bytesRead);
+                }
+            }
+        }
+        
         /// <summary>
         /// WaveFileWriter that actually writes to a stream
         /// </summary>
@@ -65,13 +92,13 @@ namespace NAudio.Wave
         {
             this.outStream = outStream;
             this.format = format;
-            this.writer = new BinaryWriter(outStream, System.Text.Encoding.UTF8);
-            this.writer.Write(System.Text.Encoding.UTF8.GetBytes("RIFF"));
-            this.writer.Write((int)0); // placeholder
-            this.writer.Write(System.Text.Encoding.UTF8.GetBytes("WAVE"));
+            writer = new BinaryWriter(outStream, System.Text.Encoding.UTF8);
+            writer.Write(System.Text.Encoding.UTF8.GetBytes("RIFF"));
+            writer.Write((int)0); // placeholder
+            writer.Write(System.Text.Encoding.UTF8.GetBytes("WAVE"));
 
-            this.writer.Write(System.Text.Encoding.UTF8.GetBytes("fmt "));
-            format.Serialize(this.writer);
+            writer.Write(System.Text.Encoding.UTF8.GetBytes("fmt "));
+            format.Serialize(writer);
 
             CreateFactChunk();
             WriteDataChunkHeader();
@@ -90,19 +117,19 @@ namespace NAudio.Wave
 
         private void WriteDataChunkHeader()
         {
-            this.writer.Write(System.Text.Encoding.UTF8.GetBytes("data"));
-            dataSizePos = this.outStream.Position;
-            this.writer.Write((int)0); // placeholder
+            writer.Write(System.Text.Encoding.UTF8.GetBytes("data"));
+            dataSizePos = outStream.Position;
+            writer.Write((int)0); // placeholder
         }
 
         private void CreateFactChunk()
         {
             if (HasFactChunk())
             {
-                this.writer.Write(System.Text.Encoding.UTF8.GetBytes("fact"));
-                this.writer.Write((int)4);
-                factSampleCountPos = this.outStream.Position;
-                this.writer.Write((int)0); // number of samples
+                writer.Write(System.Text.Encoding.UTF8.GetBytes("fact"));
+                writer.Write((int)4);
+                factSampleCountPos = outStream.Position;
+                writer.Write((int)0); // number of samples
             }
         }
 
@@ -343,6 +370,7 @@ namespace NAudio.Wave
 
         /// <summary>
         /// Ensures data is written to disk
+        /// Also updates header, so that WAV file will be valid up to the point currently written
         /// </summary>
         public override void Flush()
         {
