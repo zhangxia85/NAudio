@@ -1,0 +1,18 @@
+PATCH v1.000
+basc
+
+<GENERATOR>
+type = triangle,
+loopmode = continuous
+</GENERATOR>
+
+<ENVELOPE>
+attacktime = .01,
+releasetime = .01,
+sustainlevel = .30,
+attacklevel = .45
+</ENVELOPE>
+
+<LFO>
+frequency = 4.0
+</LFO>
