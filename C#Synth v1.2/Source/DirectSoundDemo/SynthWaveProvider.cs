@@ -7,6 +7,11 @@ using AudioSynthesis.Sequencer;
 
 namespace DirectSoundDemo
 {
+    /// <summary>
+    /// The key class that connects Synthesizer and MidiFileSequencer.
+    /// An audio render can be fed with Synthesizer's wave data by pulling.
+    /// Synthesizer is fed by MidiFileSequencer.
+    /// </summary>
     public class SynthWaveProvider : IWaveProvider
     {
         public enum MessageType { Synth, Midi };

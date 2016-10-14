@@ -237,6 +237,10 @@ namespace AudioSynthesis.Synthesis
                 sampleBuffer = new float[microBufferSize * microBufferCount * audioChannels];
             }
         }
+        /// <summary>
+        /// A pull based method for an audio render to pull wave data to play.
+        /// </summary>
+        /// <param name="buffer"></param>
         public void GetNext(byte[] buffer)
         {
             Array.Clear(sampleBuffer, 0, sampleBuffer.Length);
