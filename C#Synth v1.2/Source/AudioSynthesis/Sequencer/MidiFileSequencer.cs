@@ -11,8 +11,8 @@
  */
 using System;
 using AudioSynthesis.Midi;
-using AudioSynthesis.Synthesis;
 using AudioSynthesis.Midi.Event;
+using AudioSynthesis.Synthesis;
 
 namespace AudioSynthesis.Sequencer
 {
@@ -27,20 +27,19 @@ namespace AudioSynthesis.Sequencer
         private int totalTime;
         private int sampleTime;
         private int eventIndex;
-
         //--Public Properties
         public Synthesizer Synth
         {
             get { return synth; }
             set { synth = value; }
         }
-        public bool IsPlaying
-        {
-            get { return playing; }
-        }
         public bool IsMidiLoaded
         {
             get { return mdata != null; }
+        }
+        public bool IsPlaying
+        {
+            get { return playing; }
         }
         public int CurrentTime
         {
@@ -55,7 +54,6 @@ namespace AudioSynthesis.Sequencer
             get { return playbackrate; }
             set { playbackrate = SynthHelper.Clamp(value, .125, 8.0); }
         }
-
         //--Public Methods
         public MidiFileSequencer(Synthesizer synth)
         {
@@ -143,7 +141,7 @@ namespace AudioSynthesis.Sequencer
                 synth.ResetSynthControls();
                 return;
             }
-            int newMSize = (int)(synth.MicroBufferSize * playbackrate);       
+            int newMSize = (int)(synth.MicroBufferSize * playbackrate);
             for (int x = 0; x < synth.midiEventCounts.Length; x++)
             {
                 sampleTime += newMSize;
@@ -164,7 +162,7 @@ namespace AudioSynthesis.Sequencer
             //Converts midi to sample based format for easy sequencing
             double BPM = 120.0;
             //Combine all tracks into 1 track that is organized from lowest to highest absolute time
-            if(midiFile.Tracks.Length > 1 || midiFile.Tracks[0].EndTime == 0)
+            if (midiFile.Tracks.Length > 1 || midiFile.Tracks[0].EndTime == 0)
                 midiFile.CombineTracks();
             mdata = new MidiMessage[midiFile.Tracks[0].MidiEvents.Length];
             //Convert delta time to sample time
@@ -191,7 +189,7 @@ namespace AudioSynthesis.Sequencer
             {
                 if (mdata[eventIndex].command != 0x90)
                 {
-                    MidiMessage m = mdata[eventIndex]; 
+                    MidiMessage m = mdata[eventIndex];
                     synth.ProcessMidiMessage(m.channel, m.command, m.data1, m.data2);
                 }
                 eventIndex++;

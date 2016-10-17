@@ -9,12 +9,12 @@
  *  Used for midi input using short messages. 
  *  Tempo is calculated by the input device so the messages are all processed at the same time with: FillSequencerQueue(...)
  */
-using System.Collections.Generic;
+using System;
 using AudioSynthesis.Synthesis;
 
 namespace AudioSynthesis.Sequencer
 {
-    public class MidiInputSequencer
+    public class MidiInputSequencer : IObservable<MidiMessage>, IObserver<MidiMessage>
     {
         private Synthesizer synth;
 
@@ -33,6 +33,26 @@ namespace AudioSynthesis.Sequencer
             midiMsg.delta = 0;
             synth.midiEventQueue.Enqueue(midiMsg);
             synth.midiEventCounts[0]++;
+        }
+
+        public IDisposable Subscribe(IObserver<MidiMessage> observer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnCompleted()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnError(Exception error)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnNext(MidiMessage value)
+        {
+            throw new NotImplementedException();
         }
     }
 }

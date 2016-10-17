@@ -27,8 +27,8 @@ namespace AudioSynthesis.Bank
         }
         public static void AddCustomPatchType(string id, Type type)
         {//add a patch type/id pair to the map
-            if (!type.IsSubclassOf(typeof(Patch)))
-                throw new Exception("Type must be a subtype of patch.");
+            //if (!type.IsSubclassOf(typeof(Patch)))
+            //    throw new Exception("Type must be a subtype of patch.");
             if (patchTypes.ContainsKey(id))
                 throw new Exception("The specified id already exists.");
             if (id.Length == 0 || id.Trim().Equals(""))
