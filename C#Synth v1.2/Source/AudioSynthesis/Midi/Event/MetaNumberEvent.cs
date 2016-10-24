@@ -10,7 +10,7 @@
         public MetaNumberEvent(int delta, byte status, byte metaId, int number)
             : base(delta, status, metaId, 0)
         {
-            this.mNumber = number;
+            mNumber = number;
         }
     }
 }

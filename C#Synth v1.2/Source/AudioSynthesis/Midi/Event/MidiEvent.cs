@@ -31,8 +31,8 @@
 
         public MidiEvent(int delta, byte status, byte data1, byte data2)
         {
-            this.time = delta;
-            this.message = status | data1 << 8 | data2 << 16;
+            time = delta;
+            message = status | data1 << 8 | data2 << 16;
         }
         public override string ToString()
         {

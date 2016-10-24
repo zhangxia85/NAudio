@@ -120,8 +120,8 @@ namespace AudioSynthesis.Bank.Patches
         }
         public void Load(Sf2Region region, AssetManager assets)
         {
-            this.exGroup = region.Generators[(int)GeneratorEnum.ExclusiveClass];
-            this.exTarget = exGroup;
+            exGroup = region.Generators[(int)GeneratorEnum.ExclusiveClass];
+            exTarget = exGroup;
             iniFilterFc = region.Generators[(int)GeneratorEnum.InitialFilterCutoffFrequency];
             filterQ = SynthHelper.DBtoLinear(region.Generators[(int)GeneratorEnum.InitialFilterQ] / 10.0);
             initialAttn = -region.Generators[(int)GeneratorEnum.InitialAttenuation] / 10f;
@@ -146,7 +146,7 @@ namespace AudioSynthesis.Bank.Patches
        
         private void LoadGen(Sf2Region region, AssetManager assets)
         {
-            SampleDataAsset sda = assets.SampleAssetList[region.Generators[(int)GeneratorEnum.SampleID]];
+            SampleDataAsset sda = assets.SampleDataAssets[region.Generators[(int)GeneratorEnum.SampleID]];
             gen = new SampleGenerator();
             gen.EndPhase = sda.End + region.Generators[(int)GeneratorEnum.EndAddressOffset] + 32768 * region.Generators[(int)GeneratorEnum.EndAddressCoarseOffset];
             gen.Frequency = sda.SampleRate;

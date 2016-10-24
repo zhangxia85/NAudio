@@ -44,9 +44,9 @@
             this.instPrograms = instPrograms;
             this.drumPrograms = drumPrograms;
             this.midiEvents = midiEvents;
-            this.notesPlayed = 0;
-            this.totalTime = 0;
-            this.activeChannels = 0;
+            notesPlayed = 0;
+            totalTime = 0;
+            activeChannels = 0;
         }
         public bool isChannelActive(int channel)
         {

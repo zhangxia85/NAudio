@@ -18,9 +18,9 @@
         //--Methods
         public WaveFileWriter(int sampleRate, int channels, int bitsPerSample, IResource tempFile, IResource waveFile)
         {
-            this.sRate = sampleRate;
+            sRate = sampleRate;
             this.channels = channels;
-            this.bits = bitsPerSample;
+            bits = bitsPerSample;
             if (!tempFile.WriteAllowed() || !tempFile.ReadAllowed() || !tempFile.DeleteAllowed())
                 throw new Exception("A valid temporary file with read/write/and delete access is required.");
             tempR = tempFile;

@@ -76,8 +76,8 @@ namespace AudioSynthesis.Synthesis
         }
         public PanComponent(float right, float left)
         {
-            this.Right = right;
-            this.Left = left;
+            Right = right;
+            Left = left;
         }
         public override string ToString()
         {

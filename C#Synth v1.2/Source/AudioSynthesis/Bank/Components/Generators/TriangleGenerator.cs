@@ -1,10 +1,9 @@
 ﻿using System;
 using AudioSynthesis.Bank.Descriptors;
-using AudioSynthesis.Synthesis;
 
 namespace AudioSynthesis.Bank.Components.Generators
 {
-    public class TriangleGenerator : Generator
+    public class TriangleGenerator:Generator
     {
         //--Methods
         public TriangleGenerator(GeneratorDescriptor description)
@@ -12,15 +11,15 @@ namespace AudioSynthesis.Bank.Components.Generators
         {
             if(end < 0)
                 end = 1.25;
-            if (start < 0)
+            if(start < 0)
                 start = 0.25;
-            if (loopEnd < 0)
+            if(loopEnd < 0)
                 loopEnd = end;
-            if (loopStart < 0)
+            if(loopStart < 0)
                 loopStart = start;
             if(genPeriod < 0)
                 genPeriod = 1;
-            if (root < 0)
+            if(root < 0)
                 root = 69;
             freq = 440;
         }
@@ -28,15 +27,15 @@ namespace AudioSynthesis.Bank.Components.Generators
         {
             return (float)(Math.Abs(phase - Math.Floor(phase + 0.5)) * 4.0 - 1.0);
         }
-        public override void GetValues(GeneratorParameters generatorParams, float[] blockBuffer, double increment)
+        public override void GetValues(GeneratorParameters generatorParams,float[] blockBuffer,double increment)
         {
             int proccessed = 0;
             do
             {
                 int samplesAvailable = (int)Math.Ceiling((generatorParams.currentEnd - generatorParams.phase) / increment);
-                if (samplesAvailable > blockBuffer.Length - proccessed)
+                if(samplesAvailable > blockBuffer.Length - proccessed)
                 {
-                    while (proccessed < blockBuffer.Length)
+                    while(proccessed < blockBuffer.Length)
                     {
                         blockBuffer[proccessed++] = (float)(Math.Abs(generatorParams.phase - Math.Floor(generatorParams.phase + 0.5)) * 4.0 - 1.0);
                         generatorParams.phase += increment;
@@ -45,12 +44,12 @@ namespace AudioSynthesis.Bank.Components.Generators
                 else
                 {
                     int endProccessed = proccessed + samplesAvailable;
-                    while (proccessed < endProccessed)
+                    while(proccessed < endProccessed)
                     {
                         blockBuffer[proccessed++] = (float)(Math.Abs(generatorParams.phase - Math.Floor(generatorParams.phase + 0.5)) * 4.0 - 1.0);
                         generatorParams.phase += increment;
                     }
-                    switch (generatorParams.currentState)
+                    switch(generatorParams.currentState)
                     {
                         case GeneratorStateEnum.PreLoop:
                             generatorParams.currentStart = loopStart;
@@ -62,13 +61,13 @@ namespace AudioSynthesis.Bank.Components.Generators
                             break;
                         case GeneratorStateEnum.PostLoop:
                             generatorParams.currentState = GeneratorStateEnum.Finished;
-                            while (proccessed < blockBuffer.Length)
+                            while(proccessed < blockBuffer.Length)
                                 blockBuffer[proccessed++] = 0f;
                             break;
                     }
                 }
             }
-            while (proccessed < blockBuffer.Length);
+            while(proccessed < blockBuffer.Length);
         }
     }
 }

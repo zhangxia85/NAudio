@@ -1,127 +1,105 @@
-﻿namespace AudioSynthesis.Bank.Components.Effects
+﻿using System;
+using AudioSynthesis.Bank.Descriptors;
+
+namespace AudioSynthesis.Bank.Components.Effects
 {
-    using System;
-    using AudioSynthesis.Bank.Descriptors;
-    using AudioSynthesis.Synthesis;
-    
-    public class Flanger : IAudioEffect
+    public class Flanger:IAudioEffect
     {
-        private Lfo lfo;
-        private float fBack;
-        private float wMix;
-        private float dMix;
         private int baseDelay;
         private int minDelay;
-        private float[] inputBuffer1;
-        private float[] outputBuffer1;
-        private int position1;
-        private float[] inputBuffer2;
-        private float[] outputBuffer2;
-        private int position2;
+        private float[] iBL;
+        private float[] oBL;
+        private int pL;
+        private float[] iBR;
+        private float[] oBR;
+        private int pR;
 
-        public Lfo Lfo
-        {
-            get { return lfo; }
-            set { lfo = value; }
-        }
-        public float FeedBack
-        {
-            get { return fBack; }
-            set { fBack = value; }
-        }
-        public float WetMix
-        {
-            get { return wMix; }
-            set { wMix = value; }
-        }
-        public float DryMix
-        {
-            get { return dMix; }
-            set { dMix = value; }
-        }
+        public float FeedBack { get; set; }
+        public float WetMix { get; set; }
+        public float DryMix { get; set; }
+        public Lfo Lfo { get; set; }
 
-        public Flanger(int sampleRate, double minDelay, double maxDelay)
+        public Flanger(int sampleRate,double minDelay,double maxDelay)
         {
-            if (minDelay > maxDelay)
+            FeedBack = .15f;
+            WetMix = .5f;
+            DryMix = .5f;
+
+            LfoDescriptor description = new LfoDescriptor();
+            Lfo = new Lfo();
+            Lfo.QuickSetup(sampleRate,description);
+
+            if(minDelay > maxDelay)
             {
                 double m = minDelay;
                 minDelay = maxDelay;
                 maxDelay = m;
             }
-            LfoDescriptor description = new LfoDescriptor();
-            this.lfo = new Lfo();
-            this.lfo.QuickSetup(sampleRate, description);
-
-            this.baseDelay = (int)(sampleRate * (maxDelay - minDelay));
+            baseDelay = (int)(sampleRate * (maxDelay - minDelay));
             this.minDelay = (int)(sampleRate * minDelay);
 
             int size = (int)(sampleRate * maxDelay) + 1;
-            this.inputBuffer1 = new float[size];
-            this.outputBuffer1 = new float[size];
-            this.position1 = 0;
-
-            this.inputBuffer2 = new float[size];
-            this.outputBuffer2 = new float[size];
-            this.position2 = 0;
-
-            this.fBack = .15f;
-            this.wMix = .5f;
-            this.dMix = .5f;
+            iBL = new float[size];
+            oBL = new float[size];
+            pL = 0;
+            iBR = new float[size];
+            oBR = new float[size];
+            pR = 0;
         }
-        public void ApplyEffect(float[] source)
+        public void ApplyEffect(float[] wave)
         {
-            for (int x = 0; x < source.Length; x++)
+            for(int i = 0, j; i < wave.Length; i++)
             {
-                lfo.Increment(1);
-                int index = position1 - (int)(baseDelay * (.5 * lfo.Value + .5) + minDelay);
-                
-                if(index < 0)
-                    index += inputBuffer1.Length;
+                Lfo.Increment(1);
+                j = pL - (int)(baseDelay * (.5 * Lfo.Value + .5) + minDelay);
 
-                inputBuffer1[position1] = source[x];
-                outputBuffer1[position1] = dMix * inputBuffer1[position1] + wMix * inputBuffer1[index] + fBack * outputBuffer1[index];
-                source[x] = outputBuffer1[position1++];
+                while(j < 0)
+                    j += iBL.Length;
 
-                if (position1 == inputBuffer1.Length)
-                    position1 = 0;
+                iBL[pL] = wave[i];
+                oBL[pL] = DryMix * iBL[pL] + WetMix * iBL[j] + FeedBack * oBL[j];
+                wave[i] = oBL[pL++];
+
+                if(pL == iBL.Length)
+                    pL = 0;
             }
         }
-        public void ApplyEffect(float[] source1, float[] source2)
+        public void ApplyEffect(float[] waveLeft,float[] waveRight)
         {
-            for (int x = 0, index; x < source1.Length; x++)
+            for(int i = 0, j; i < waveLeft.Length; i++)
             {
-                lfo.Increment(1);
-                double lfoValue = (.5 * lfo.Value + .5);
+                Lfo.Increment(1);
+                double lfoValue = (.5 * Lfo.Value + .5);
                 //source 1
-                index = position1 - (int)(baseDelay * lfoValue + minDelay);
-                if (index < 0)
-                    index += inputBuffer1.Length;
-                inputBuffer1[position1] = source1[x];
-                outputBuffer1[position1] = dMix * inputBuffer1[position1] + wMix * inputBuffer1[index] + fBack * outputBuffer1[index];
-                source1[x] = outputBuffer1[position1++];
-                if (position1 == inputBuffer1.Length)
-                    position1 = 0;
+                j = pL - (int)(baseDelay * lfoValue + minDelay);
+                while(j < 0)
+                    j += iBL.Length;
+                iBL[pL] = waveLeft[i];
+                oBL[pL] = DryMix * iBL[pL] + WetMix * iBL[j] + FeedBack * oBL[j];
+                waveLeft[i] = oBL[pL++];
+                if(pL == iBL.Length)
+                    pL = 0;
                 //source 2
-                index = position2 - (int)(baseDelay * (1.0 - lfoValue) + minDelay);
-                if (index < 0)
-                    index += inputBuffer2.Length;
-                inputBuffer2[position2] = source2[x];
-                outputBuffer2[position2] = dMix * inputBuffer2[position2] + wMix * inputBuffer2[index] + fBack * outputBuffer2[index];
-                source2[x] = outputBuffer2[position2++];
-                if (position2 == inputBuffer2.Length)
-                    position2 = 0;
+                j = pR - (int)(baseDelay * (1.0 - lfoValue) + minDelay);
+                while(j < 0)
+                    j += iBR.Length;
+                iBR[pR] = waveRight[i];
+                oBR[pR] = DryMix * iBR[pR] + WetMix * iBR[j] + FeedBack * oBR[j];
+                waveRight[i] = oBR[pR++];
+                if(pR == iBR.Length)
+                    pR = 0;
 
             }
         }
         public void Reset()
         {
-            lfo.Reset();
-            Array.Clear(inputBuffer1, 0, inputBuffer1.Length);
-            Array.Clear(outputBuffer1, 0, outputBuffer1.Length);
-            Array.Clear(inputBuffer2, 0, inputBuffer2.Length);
-            Array.Clear(outputBuffer2, 0, outputBuffer2.Length);
-            position1 = 0;
-            position2 = 0;
+            Lfo.Reset();
+            Array.Clear(iBL,0,iBL.Length);
+            Array.Clear(oBL,0,oBL.Length);
+            Array.Clear(iBR,0,iBR.Length);
+            Array.Clear(oBR,0,oBR.Length);
+            pL = 0;
+            pR = 0;
         }
     }
 }

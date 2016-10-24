@@ -24,9 +24,9 @@
         //--Methods
         public WaveFile(Chunk[] chunks)
         {
-            this.chks = chunks;
-            this.dataChk = FindChunk<DataChunk>();
-            this.fmtChk = FindChunk<FormatChunk>();
+            chks = chunks;
+            dataChk = FindChunk<DataChunk>();
+            fmtChk = FindChunk<FormatChunk>();
         }
         public T FindChunk<T>(int startIndex = 0) where T : Chunk
         {

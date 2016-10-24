@@ -10,7 +10,7 @@
         public MetaDataEvent(int delta, byte status, byte metaId, byte[] data)
             : base(delta, status, metaId, 0)
         {
-            this.mdata = data;
+            mdata = data;
         }
     }
 }

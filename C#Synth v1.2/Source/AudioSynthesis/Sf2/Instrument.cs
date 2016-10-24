@@ -30,7 +30,7 @@
 
         public override string ToString()
         {
-            return this.name;
+            return name;
         }
     }
 }

@@ -146,9 +146,9 @@ namespace AudioSynthesis.Synthesis
             if (audioChannels < 1 || audioChannels > 2)
                 throw new ArgumentException("Invalid paramater: (audioChannels) Valid ranges are " + 1 + " to " + 2, "audioChannels");
             this.audioChannels = audioChannels;
-            this.microBufferSize = SynthHelper.Clamp(bufferSize, (int)(MinBufferSize * sampleRate), (int)(MaxBufferSize * sampleRate));
-            this.microBufferSize = (int)Math.Ceiling(this.microBufferSize / (double)DefaultBlockSize) * DefaultBlockSize; //ensure multiple of block size
-            this.microBufferCount = Math.Max(1, bufferCount);
+            microBufferSize = SynthHelper.Clamp(bufferSize, (int)(MinBufferSize * sampleRate), (int)(MaxBufferSize * sampleRate));
+            microBufferSize = (int)Math.Ceiling(microBufferSize / (double)DefaultBlockSize) * DefaultBlockSize; //ensure multiple of block size
+            microBufferCount = Math.Max(1, bufferCount);
             sampleBuffer = new float[microBufferSize * microBufferCount * audioChannels];
             littleEndian = true;
             //Setup Controllers
@@ -159,7 +159,7 @@ namespace AudioSynthesis.Synthesis
             voiceManager = new VoiceManager(SynthHelper.Clamp(polyphony, MinPolyphony, MaxPolyphony));
             //Create midi containers
             midiEventQueue = new Queue<MidiMessage>();
-            midiEventCounts = new int[this.microBufferCount];
+            midiEventCounts = new int[microBufferCount];
             layerList = new Patch[15]; 
         }
         public bool IsLittleEndian()
@@ -168,7 +168,7 @@ namespace AudioSynthesis.Synthesis
         }
         public void SetEndianMode(bool isLittleEndian)
         {
-            this.littleEndian = isLittleEndian;
+            littleEndian = isLittleEndian;
         }
         public void LoadBank(IResource bankFile)
         {
@@ -183,11 +183,11 @@ namespace AudioSynthesis.Synthesis
         }
         public void UnloadBank()
         {
-            if (this.bank != null)
+            if (bank != null)
             {
                 NoteOffAll(true);
                 voiceManager.UnloadPatches();
-                this.bank = null;
+                bank = null;
             }
         }
         public void ResetSynthControls()

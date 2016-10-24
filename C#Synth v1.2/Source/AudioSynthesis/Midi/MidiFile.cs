@@ -88,8 +88,8 @@
                 finalTrack.MidiEvents[x].DeltaTime -= deltadiff;
                 deltadiff = oldtime;
             }
-            this.mTracks = new MidiTrack[] { finalTrack };
-            this.mTrackFormat = TrackFormat.SingleTrack;
+            mTracks = new MidiTrack[] { finalTrack };
+            mTrackFormat = TrackFormat.SingleTrack;
         }
 
         private MidiTrack MergeTracks()

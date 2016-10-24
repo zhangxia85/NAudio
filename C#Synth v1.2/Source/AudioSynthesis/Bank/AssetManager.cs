@@ -1,43 +1,32 @@
-﻿using System.IO;
-using System.Collections.Generic;
-using AudioSynthesis.Wave;
+﻿using System.Collections.Generic;
 
 namespace AudioSynthesis.Bank
 {
     public class AssetManager
     {
-        private List<PatchAsset> patchAssets;
-        private List<SampleDataAsset> sampleAssets;
-
-        public List<PatchAsset> PatchAssetList
-        {
-            get { return patchAssets; }
-        }
-        public List<SampleDataAsset> SampleAssetList
-        {
-            get { return sampleAssets; }
-        }
+        public List<PatchAsset> PatchAssets { get; private set; }
+        public List<SampleDataAsset> SampleDataAssets { get; private set; }
 
         public AssetManager()
         {
-            patchAssets = new List<PatchAsset>();
-            sampleAssets = new List<SampleDataAsset>();
+            PatchAssets = new List<PatchAsset>();
+            SampleDataAssets = new List<SampleDataAsset>();
         }
         public PatchAsset FindPatch(string name)
         {
-            for (int x = 0; x < patchAssets.Count; x++)
+            for (int i = 0; i < PatchAssets.Count; i++)
             {
-                if (patchAssets[x].Name.Equals(name))
-                    return patchAssets[x];
+                if (PatchAssets[i].Name.Equals(name))
+                    return PatchAssets[i];
             }
             return null;
         }
         public SampleDataAsset FindSample(string name)
         {
-            for (int x = 0; x < sampleAssets.Count; x++)
+            for (int i = 0; i < SampleDataAssets.Count; i++)
             {
-                if (sampleAssets[x].Name.Equals(name))
-                    return sampleAssets[x];
+                if (SampleDataAssets[i].Name.Equals(name))
+                    return SampleDataAssets[i];
             }
             return null;
         }

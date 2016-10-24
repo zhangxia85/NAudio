@@ -109,14 +109,14 @@ namespace AudioSynthesis.Bank
         }
         public SampleDataAsset(SampleHeader sample, SoundFontSampleData sampleData)
         {
-            this.assetName = sample.Name;
-            this.sampleRate = sample.SampleRate;
-            this.rootKey = sample.RootKey;
-            this.tune = sample.Tune;
-            this.start = sample.Start;
-            this.end = sample.End;
-            this.loopStart = sample.StartLoop;
-            this.loopEnd = sample.EndLoop;
+            assetName = sample.Name;
+            sampleRate = sample.SampleRate;
+            rootKey = sample.RootKey;
+            tune = sample.Tune;
+            start = sample.Start;
+            end = sample.End;
+            loopStart = sample.StartLoop;
+            loopEnd = sample.EndLoop;
             this.sampleData = PcmData.Create(sampleData.BitsPerSample, sampleData.SampleData, true);
         }
 

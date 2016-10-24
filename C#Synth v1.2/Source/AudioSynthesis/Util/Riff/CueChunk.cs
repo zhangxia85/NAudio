@@ -60,12 +60,12 @@
 
             public CuePoint(BinaryReader reader)
             {
-                this.cueId = reader.ReadInt32();
-                this.cuePosition = reader.ReadInt32();
-                this.cueDataChunkId = new string(IOHelper.Read8BitChars(reader, 4));
-                this.cueChunkStart = reader.ReadInt32();
-                this.cueBlockStart = reader.ReadInt32();
-                this.cueSampleOffset = reader.ReadInt32();
+                cueId = reader.ReadInt32();
+                cuePosition = reader.ReadInt32();
+                cueDataChunkId = new string(IOHelper.Read8BitChars(reader, 4));
+                cueChunkStart = reader.ReadInt32();
+                cueBlockStart = reader.ReadInt32();
+                cueSampleOffset = reader.ReadInt32();
             }
         }
     }

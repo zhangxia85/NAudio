@@ -73,8 +73,8 @@ namespace AudioSynthesis.Bank
             if (!bankFile.ReadAllowed())
                 throw new Exception("The bank file provided does not have read access.");
             bank.Clear();
-            assets.PatchAssetList.Clear();
-            assets.SampleAssetList.Clear();
+            assets.PatchAssets.Clear();
+            assets.SampleDataAssets.Clear();
             bankName = string.Empty;
             comment = string.Empty;
             switch (IOHelper.GetExtension(bankFile.GetName()).ToLower())
@@ -90,8 +90,8 @@ namespace AudioSynthesis.Bank
                 default:
                     throw new Exception("Invalid bank resource was provided. An extension must be included in the resource name.");
             }
-            assets.PatchAssetList.TrimExcess();
-            assets.SampleAssetList.TrimExcess();
+            assets.PatchAssets.TrimExcess();
+            assets.SampleDataAssets.TrimExcess();
         }
         //public void LoadPatch(string patchFile, int bankNumber, int startRange, int endRange)
         //{
@@ -203,7 +203,7 @@ namespace AudioSynthesis.Bank
                     throw new Exception("Invalid bank file. The INFO chunk is missing.");
                 if (reader.ReadSingle() != BankVersion)
                     throw new Exception(string.Format("Invalid bank file. The bank version is incorrect, the correct version is {0:0.000}.", BankVersion));
-                this.comment = IOHelper.Read8BitString(reader, size - 4);
+                comment = IOHelper.Read8BitString(reader, size - 4);
                 //read asset list chunk
                 id = IOHelper.Read8BitString(reader, 4).ToLower();
                 size = reader.ReadInt32();
@@ -220,7 +220,7 @@ namespace AudioSynthesis.Bank
                     size = reader.ReadInt32();
                     if (!id.Equals("smpl"))
                         throw new Exception("Invalid bank file. Only SMPL chunks are allowed in the asset list chunk.");
-                    assets.SampleAssetList.Add(new SampleDataAsset(size, reader));
+                    assets.SampleDataAssets.Add(new SampleDataAsset(size, reader));
                 }
                 //read instrument list chunk
                 id = IOHelper.Read8BitString(reader, 4).ToLower();
@@ -247,7 +247,7 @@ namespace AudioSynthesis.Bank
                     else
                         throw new Exception("Invalid patch type \"" + patchType + "\"! Patch ID: " + patchName);
                     patch.Load(new DescriptorList(reader), assets);
-                    assets.PatchAssetList.Add(new PatchAsset(patchName, patch));
+                    assets.PatchAssets.Add(new PatchAsset(patchName, patch));
                     int rangeCount = reader.ReadInt16();
                     for (int x = 0; x < rangeCount; x++)
                     {
@@ -266,7 +266,7 @@ namespace AudioSynthesis.Bank
             comment = sf.Info.Comments;
             //load samples
             for (int x = 0; x < sf.Presets.SampleHeaders.Length; x++)
-                assets.SampleAssetList.Add(new SampleDataAsset(sf.Presets.SampleHeaders[x], sf.SampleData));
+                assets.SampleDataAssets.Add(new SampleDataAsset(sf.Presets.SampleHeaders[x], sf.SampleData));
             //create instrument regions first
             Sf2Region[][] inst = ReadSf2Instruments(sf.Presets.Instruments);
             //load each patch
@@ -363,7 +363,7 @@ namespace AudioSynthesis.Bank
                 }
                 MultiPatch mp = new MultiPatch(p.Name);
                 mp.LoadSf2(regionList.ToArray(), assets);
-                assets.PatchAssetList.Add(new PatchAsset(mp.Name, mp));
+                assets.PatchAssets.Add(new PatchAsset(mp.Name, mp));
                 AssignPatchToBank(mp, p.BankNumber, p.PatchNumber, p.PatchNumber);
             }
         }
